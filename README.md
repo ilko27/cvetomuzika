@@ -1,4 +1,5 @@
-Python and arduino project to make LED strips react to live music. The PC's audio is rerouted to an input channel using VB-Cable. Sounddevice then uses the input channel and applies a low pass filter at 250Hz to isolate the bass frequencies.
+Python and arduino project to make LED strips react to live music. The PC's audio is rerouted to an input channel using VB-Cable. Sounddevice then uses the input channel and applies a low pass filter at 250Hz to isolate the bass frequencies. The RMS value of the bass amplitude is used for the intensity of the LED lights.
+
 The protocol used is:
 ```
 [0x01][0x03][R_VALUE][G_VALUE][B_VALUE][CHECKSUM]
