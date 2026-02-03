@@ -2,7 +2,9 @@ import numpy as np
 import sounddevice as sd
 from scipy.signal import butter, lfilter
 import serial
-import keyboard
+import msvcrt
+
+from commands import new_colors
 
 # try:
 ser = serial.Serial("COM3", 9600)
@@ -11,11 +13,12 @@ ser = serial.Serial("COM3", 9600)
 #     exit()
 # Low-pass filter design
 
-rcoff = 0.1
-gcoff = 1
-bcoff = 0.1
+coffs = [0.1, 1, 0.1]
 
-coffs = [rcoff, gcoff, bcoff]
+g1 = [1.0, 0.01, 0.07]
+g2 = [0.1, 1, 0.1]
+grad = [g1, g2]
+useGradient = True
 
 rgb = [0, 0, 0]
 
@@ -52,8 +55,18 @@ b, a = butter_lowpass(cutoff, fs, order)
 def audio_callback(indata, frames, time, status):
     if status:
         print(f"Status: {status}", flush=True)
-    if keyboard.is_pressed("v"):
-        print("V pressed")
+
+    global coffs
+    global useGradient
+    if msvcrt.kbhit():
+        # print(msvcrt.getch())
+        keyChar = msvcrt.getch() 
+        if keyChar == b'c':
+            coffs = new_colors()
+        elif keyChar == b'g':
+            useGradient = not useGradient
+            print(f"Gradient: {useGradient}")
+        # command()
 
     mono_data = indata[:, 0]  # Take first channel if stereo
     filtered_data = apply_lowpass_filter(mono_data, b, a)
@@ -61,10 +74,8 @@ def audio_callback(indata, frames, time, status):
     # print(f"Volume (filtered RMS): {volume:.4f}", flush=True)
     # print('*'*round(volume))
     volume = round(volume, 2)
-    # print(volume)
     bass = (volume/20)*255
     # на 100 волюм е не повече от 50
-    # print(bass)
 
     if bass < 123:
         bass = 0.01666*(bass**1.89)
@@ -76,15 +87,18 @@ def audio_callback(indata, frames, time, status):
     elif bass > 255:
         bass = 255
 
-    # bass = chr(bass)
-
     for c in range(0, 3):
-        rgb[c] = round(bass * coffs[c])
+        if useGradient:
+            gcoff = round(bass/255, 2)
+            rgb[c] = round(
+                bass * (grad[1][c] * (1 - gcoff) + grad[0][c] * (gcoff)))
+        else:
+            rgb[c] = round(bass * coffs[c])
 
     # print([0x01, 0x03, rgb[0], rgb[1], rgb[2], rgb[0] ^ rgb[1] ^ rgb[2]])
-    ser.write(bytes([0x01, 0x03, rgb[0], rgb[1], rgb[2], rgb[0] ^ rgb[1] ^ rgb[2]]))
+    ser.write(bytes([0x01, 0x03, rgb[0], rgb[1],
+              rgb[2], rgb[0] ^ rgb[1] ^ rgb[2]]))
     ser.reset_input_buffer()
-    # ser = serial.Serial("COM4", 9600)
 
 
 # Start audio stream
