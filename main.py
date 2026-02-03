@@ -18,7 +18,7 @@ coffs = [0.1, 1, 0.1]
 g1 = [1.0, 0.01, 0.07]
 g2 = [0.1, 1, 0.1]
 grad = [g1, g2]
-useGradient = True
+useGradient = False
 
 rgb = [0, 0, 0]
 
