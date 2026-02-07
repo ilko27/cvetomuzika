@@ -11,7 +11,6 @@ ser = serial.Serial("COM3", 9600)
 # except:
 #     print("No device")
 #     exit()
-# Low-pass filter design
 
 coffs = [0.1, 1, 0.1]
 
@@ -19,8 +18,12 @@ g1 = [1.0, 0.01, 0.07]
 g2 = [0.1, 1, 0.1]
 grad = [g1, g2]
 useGradient = False
-
+useSound = False
+sensitivity = 20
+# grad = [sun, pink]
 rgb = [0, 0, 0]
+
+# Low-pass filter design
 
 
 def butter_lowpass(cutoff, fs, order=5):
@@ -58,23 +61,48 @@ def audio_callback(indata, frames, time, status):
 
     global coffs
     global useGradient
+    global useSound
+    global sensitivity
+
     if msvcrt.kbhit():
         # print(msvcrt.getch())
-        keyChar = msvcrt.getch() 
+        keyChar = msvcrt.getch()
+        if keyChar == b'h':
+            print("c: change color")
+            print("z: change gradient first color")
+            print("x: change  gradient second color")
+            print("g: use gradient")
+            print("s: use sound")
+            print("v: change volume sensitivity")
+            
         if keyChar == b'c':
             coffs = new_colors()
+        elif keyChar == b'z':
+            grad[0] = new_colors()
+        elif keyChar == b'x':
+            grad[1] = new_colors()
         elif keyChar == b'g':
             useGradient = not useGradient
             print(f"Gradient: {useGradient}")
+        elif keyChar == b's':
+            useSound = not useSound
+            print(f"Sound: {not useSound}")
+        elif keyChar == b'v':
+            sensitivity = int(input("At 100 volume no more than 50: "))
         # command()
 
+    if useSound:
+        ser.write(bytes([0x01, 0x03, round(coffs[0]*255), round(coffs[1]*255), round(
+            coffs[2]*255), round(coffs[0]*255) ^ round(coffs[1]*255) ^ round(coffs[2]*255)]))
+        ser.reset_input_buffer()
+        return
     mono_data = indata[:, 0]  # Take first channel if stereo
     filtered_data = apply_lowpass_filter(mono_data, b, a)
     volume = calculate_rms(filtered_data)*100
     # print(f"Volume (filtered RMS): {volume:.4f}", flush=True)
     # print('*'*round(volume))
     volume = round(volume, 2)
-    bass = (volume/20)*255
+    bass = (volume/sensitivity)*255
     # на 100 волюм е не повече от 50
 
     if bass < 123:
@@ -91,7 +119,7 @@ def audio_callback(indata, frames, time, status):
         if useGradient:
             gcoff = round(bass/255, 2)
             rgb[c] = round(
-                bass * (grad[1][c] * (1 - gcoff) + grad[0][c] * (gcoff)))
+                bass * (grad[0][c] * (1 - gcoff) + grad[1][c] * (gcoff)))
         else:
             rgb[c] = round(bass * coffs[c])
 

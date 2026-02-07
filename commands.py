@@ -1,5 +1,6 @@
 named_colors = {
     "pink": [1.0, 0.01, 0.07],  # ff0311
+    "cherry": [1.0, 0.059, 0.09], # ff0f17
     "turq": [0.1, 1, 0.1],
     "orange": [1.0, 0.07, 0.0],
     "sun": [1.0, 0.13, 0.0],
@@ -32,7 +33,7 @@ def new_colors():
         new = [1, 1, 1]
 
     for _, c in enumerate(new):
-        new[_] = round(c/255, 2)
+        new[_] = round(c/255, 3)
     print(new)
 
     return new
